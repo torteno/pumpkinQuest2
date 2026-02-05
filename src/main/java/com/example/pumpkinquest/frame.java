@@ -25,6 +25,9 @@ import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 
+import java.awt.event.MouseListener;
+import java.awt.event.MouseEvent;
+
 
 public class frame extends JFrame implements KeyListener {
 
@@ -150,7 +153,32 @@ public class frame extends JFrame implements KeyListener {
 
      private objects gamObjects;
 
-    
+    MouseListener mouseListener = new MouseListener() {
+        @Override
+        public void mouseClicked(MouseEvent e) {
+
+        }
+
+        @Override
+        public void mousePressed(MouseEvent e) {
+
+        }
+
+        @Override
+        public void mouseReleased(MouseEvent e) {
+
+        }
+
+        @Override
+        public void mouseEntered(MouseEvent e) {
+
+        }
+
+        @Override
+        public void mouseExited(MouseEvent e) {
+
+        }
+    };
 
 
     // this section creates the GUI assets that are used in the game, such as buttons, labels, and images
@@ -1132,6 +1160,8 @@ public class frame extends JFrame implements KeyListener {
         mine.mining();
         System.out.println(mine.getListOfOres());
 
+
+
         // Load icon image
         ImageIcon iconTemp = null;
         URL iconURL = getClass().getResource("/images/mob/ghost");
@@ -1261,6 +1291,9 @@ public class frame extends JFrame implements KeyListener {
         moveDir = 1;
 
         SScredits.setVisible(false);
+
+        magicSystem magic = new magicSystem(this);
+        magic.magicSystem();
 
 
 
@@ -1457,6 +1490,8 @@ public class frame extends JFrame implements KeyListener {
 
 //All game code is run in this loop. Whenever the time per frame is reached (currently 1/60th of a second), the code is run.
         while(true) {
+
+            magicSystem.magicSpellLoop();
             //Counts how much time has passed
             currentTime = System.nanoTime(); // Gets the current time in nanoseconds
             placeholder += (currentTime - previousTime) / timePerFrame; // Calculates how many frames have passed since the last update

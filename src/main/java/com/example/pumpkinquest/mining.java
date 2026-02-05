@@ -25,6 +25,7 @@ public class mining {
     public String getListOfOres() {
         return "Coal, Iron, Gold, Diamond, Emerald, Redstone, Lapis Lazuli";
 
+
     }
 
     
