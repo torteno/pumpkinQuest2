@@ -1,5 +1,9 @@
 package com.example.pumpkinquest;
 
+import com.example.pumpkinquest.spells.fireballSpell;
+import com.example.pumpkinquest.spells.spellContext;
+import  com.example.pumpkinquest.spells.spells;
+
 import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
@@ -7,7 +11,7 @@ import java.awt.event.MouseMotionAdapter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.UUID;
-import javax.swing.JLabel;
+import javax.swing.*;
 
 public class magicSystem {
 
@@ -16,15 +20,16 @@ public class magicSystem {
     static HashMap<String, Integer> spellSpeed = new HashMap<>();
     static HashMap<String, Integer> spellDamage = new HashMap<>();
     static HashMap<String, Integer> spellCast = new HashMap<>();
-    static HashMap<String, Runnable> spells = new HashMap<>();
-    static HashMap<String, JLabel> activeSpells = new HashMap<>();
+    static HashMap<String, Runnable> spellsHashmap = new HashMap<>();
+    //static HashMap<String, JLabel> activeSpells = new HashMap<>();
+    static ArrayList<spells> activeSpells = new ArrayList<spells>();
     static HashMap<JLabel, Point> spellTargetPosition = new HashMap<>();
 
 
 
 
     private static frame mainFrame;
-    private static JLabel magicOrb;
+    public static JLabel magicOrb;
 
     private static Point mousePoint = new Point();
 
@@ -38,9 +43,16 @@ public class magicSystem {
 
     static int range = 1000;
 
+    static int activeSpell = frame.activeSpell;
+
     public magicSystem(frame gameFrame) {
         this.mainFrame = gameFrame;
     }
+
+    public magicSystem() {
+
+    }
+
 
     //public component
 
@@ -53,39 +65,91 @@ public class magicSystem {
 
 
 
+
+
+
     public static void magicSystem() {
 
         orbPositioning();
     }
 
 
-    public static void spells() {
-        spells.put("Fireball", () -> {
+    public static void switchActiveSpell() {
+        switch(activeSpell) {
+            case 0:
+                magicOrb.setIcon(new ImageIcon("/images/magic/fireOrb.png"));
+            case 1:
+                magicOrb.setIcon(new ImageIcon("/images/magic/lightningOrb.png"));
+                break;
+            case 2:
+                magicOrb.setIcon(new ImageIcon("/images/magic/lightOrb.png"));
+                break;
+        }
+
+
+
+
+    }
+
+
+    public static void spellList() {
+        spellsHashmap.put("Fireball", () -> {
             cast("Fireball");
         });
-
-
-
-
+        spellsHashmap.put("Lightning", () -> {
+            cast("Lightning");
+        });
+        spellsHashmap.put("light", () -> {
+            cast("light");
+        });
     }
 
 
 
 
     public static void cast(String name) {
-        int damage = spellDamage.get(name);
-        int cost = spellCast.get(name);
-        int speed = spellSpeed.get(name);
-        String sprite = spellSprite.get(name);
 
-        if(mana >= cost) {
-            mana -= cost;
-            projectile(name, damage, speed, sprite);
-        } else {
-            System.out.println("Not enough mana to cast " + name);
+        JLabel orb = mainFrame.assets(magicOrb.getX(), magicOrb.getY(), magicOrb.getWidth(), magicOrb.getHeight(), false, "images/magic/" + name + ".png", false, 2, true);
+
+        spells spell = null;
+
+        switch(name) {
+            case("fireball") -> {
+                spell = new fireballSpell(orb);
+                activeSpells.add(spell);
+            }
+            case("lightning") -> {
+
+
+
+            }
+        }
+
+
+
+        if(activeTool.staff) {
+
+
+            if (mana >= spell.getManaCost()) {
+                mana -= spell.getManaCost();
+
+                spellContext context = new spellContext();
+
+                spell.cast(context);
+
+
+            } else {
+                System.out.println("Not enough mana to cast " + name);
+            }
         }
 
     }
+
+
+
+
+
+
 
     public static void projectile(String name, int damage, int speed, String sprite) {
 
@@ -97,7 +161,7 @@ public class magicSystem {
         int projectileDamage = damage;
         int projectileSpeed = speed;
 
-        JLabel projectileID = mainFrame.assets(magicOrb.getX(), magicOrb.getY(), magicOrb.getWidth(), magicOrb.getHeight(), false, spellSprite.get(name), true, 1, true);
+        JLabel projectile = mainFrame.assets(magicOrb.getX(), magicOrb.getY(), magicOrb.getWidth(), magicOrb.getHeight(), false, spellSprite.get(name), true, 1, true);
 
         double orbToMouseAngle = Math.atan(mouseAndOrbSlope);
 
@@ -156,9 +220,80 @@ public class magicSystem {
                 mousePoint = e.getPoint();
 
             }
+
+        });
+
+        double angle = Math.atan2(mousePoint.getY() - playerCenterY, mousePoint.getX() - playerCenterY);
+
+        int radiusOfOrbToPlayer = 60;
+        double orbLocationX = playerCenterX + Math.cos(angle) * radius;
+        double orbLocationY = playerCenterY + Math.sin(angle) * radius;
+
+        magicOrb.setLocation((int) (orbLocationX - (double) magicOrb.getX() /2),(int) (orbLocationX - (double) magicOrb.getY() /2) );
+
+
+        mainFrame.getContentPane().addMouseListener(new MouseListener() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                handleMouseClicked(e);
+            }
+
+            @Override
+            public void mousePressed(MouseEvent e) {
+
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+
+            }
+
+            @Override
+            public void mouseEntered(MouseEvent e) {
+
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+
+            }
         });
 
     }
+
+    public static Point getShotLocation() {
+
+        Point orbPoint = new Point();
+        double orbX = magicOrb.getX();
+        double orbY = magicOrb.getY();
+
+        double distanceX = orbX - mousePoint.getX();
+        double distanceY = orbY - mousePoint.getY();
+
+        double hypDistance = Math.sqrt(distanceX * distanceX + distanceY * distanceY);
+
+        double maxOrbDistance = 1000;
+        int finalPointOrSmthX;
+        int finalPointOrSmthY;
+
+    if(hypDistance != 0) {
+        finalPointOrSmthX = (int) (orbX + (distanceX/hypDistance) * maxOrbDistance);
+        finalPointOrSmthY = (int) (orbY + (distanceY/hypDistance) * maxOrbDistance);
+
+    } else {
+        finalPointOrSmthX = (int) orbX;
+        finalPointOrSmthY = (int) orbY;
+    }
+
+    orbPoint.x = finalPointOrSmthX;
+    orbPoint.y = finalPointOrSmthY;
+
+
+
+        return orbPoint;
+    }
+
+
 
     public static void handleMouseDragged(MouseEvent e) {
         if (magicOrb != null) {
@@ -166,8 +301,25 @@ public class magicSystem {
         }
     }
 
-    public static void magicSpellLoop() {
+    public static void handleMouseClicked(MouseEvent e) {
+        switch (activeSpell) {
+            case 0:
+                spellsHashmap.get("Fireball").run();
+                break;
+            case 1:
+                spellsHashmap.get("Lightning").run();
+                break;
+            case 2:
+                spellsHashmap.get("light").run();
+                break;
+            default:
+                System.out.println("No spell selected");
+                break;
+        }
+    }
 
+    public static void magicSpellLoop() {
+        switchActiveSpell();
         mouseAndOrbSlope = (double) ((int) mousePoint.getX() - playerCenterX) /((int) mousePoint.getY() - playerCenterY);
 
         magicOrb.setLocation(
@@ -175,13 +327,10 @@ public class magicSystem {
                 (int)(playerCenterY + (mousePoint.getY() - playerCenterY) * radius / Math.max(1,Math.hypot(mousePoint.getX() - playerCenterX, mousePoint.getY() - playerCenterY)) - magicOrb.getHeight()/2)
         );
 
+    }
 
-
-
-
-
-
-
+    public static Point getMousePoint() {
+        return mousePoint;
     }
 
 

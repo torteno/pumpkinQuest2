@@ -1,11 +1,16 @@
 package com.example.pumpkinquest;
 
+import com.example.pumpkinquest.miningSystsem.mining;
+import com.example.pumpkinquest.activeTool;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
 import java.awt.Image;
 import java.awt.Point;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.net.URL;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -34,6 +39,7 @@ public class frame extends JFrame implements KeyListener {
 
     JLabel player; // the player label that represents the player in the game
 
+    boolean gameBeenSaved = false;
 
     JLabel startScreen; // the start screen label that is displayed at the beginning of the game
     boolean startScreenVisible = true; //sets the start screen to be visible at the start of the game
@@ -72,6 +78,8 @@ public class frame extends JFrame implements KeyListener {
     int textDisappearTime = 0; // text disappearance time
     int messageDisappearNumber = -1; // message disappearance number
 
+    int maxMenuNumber = 3;
+
 
     int grandmaDialogueIndex = -1;
     int wizardDialogueIndex = -1;
@@ -82,15 +90,16 @@ public class frame extends JFrame implements KeyListener {
     JLabel[] wizardDialogueImages;
     JLabel[] villagerDialogueImages;
 
+    public static int activeSpell = 0;
 
     // creates maps for different attributes of the mobs and data that is getting stored.
 
     Map<UUID, Point> mobSpawnPoint = new HashMap<>();
     Map<JLabel, Point> AssetPoint = new HashMap<>();
     Map<JLabel, Point> mobPoint = new HashMap<>();
-    Map <UUID, JLabel> mob = new HashMap<>();
-    Map<JLabel, UUID> reverseMobMap = new HashMap<>();
-    Map <UUID, Integer> MobHealth = new HashMap<>();
+    public Map <UUID, JLabel> mob = new HashMap<>();
+    public Map<JLabel, UUID> reverseMobMap = new HashMap<>();
+    public Map <UUID, Integer> MobHealth = new HashMap<>();
     Map <UUID, Double> MobDamage = new HashMap<>();
     Map <UUID, Integer> MobReach = new HashMap<>();
     Map <UUID, Integer> MobSpeed = new HashMap<>();
@@ -106,8 +115,10 @@ public class frame extends JFrame implements KeyListener {
 
     boolean music = true; // flag to check if the music is playing, used to control the background music in the game
 
+    int timeSinceSave = 0;
 
-
+    private static int flameShards = 0;
+    private static int lightShards = 0;
 
 
     //ArrayList<Point> playerPastPoints = new ArrayList<>();
@@ -121,13 +132,15 @@ public class frame extends JFrame implements KeyListener {
     Camera CameraInstance; // instance of the camera class that handles the camera position and view in the game world
     public Point playerWorldPos = new Point(0, 0); // the world position of the player, used to determine the player's position in the game world
     public Point SpawnPoint = new Point(2360, -678); // the spawn point of the player, where the player starts in the game world
-    public Point debugPoint = new Point(0, 0); // a debug point used for testing and debugging purposes
+    public Point debugPoint = new Point(0, 0); // a debug point used for testing and debugging purposesee
 
     JLabel coordinates = new JLabel(); // label to display the player's coordinates in the game world, used for debugging and testing purposes
     BackgroundPanel backgroundPanel = new BackgroundPanel(null); // background panel that displays the game background, used to create the game world
     static Clip clip; // audio clip for background music and sound effects, used to enhance the game experience
     boolean gameStarted = false; // flag to check if the game has started, used to control the game flow and logic
     int setRespawnScreenCooldown = 0; // cooldown for the respawn screen, used to prevent the player from respawning too quickly after death
+
+
 
     //JLabel [] upAttack = new JLabel[7];
     //JLabel [] leftAttack = new JLabel[7];
@@ -137,10 +150,13 @@ public class frame extends JFrame implements KeyListener {
     String savedDirection; // saves the direction of the player, used to determine the player's facing direction when attacking or interacting with objects
 
 
+
     boolean debugMode = true; // false to enable, true to disable
     boolean placeCooldown = false; // cooldown for placing objects, used to prevent the player from placing objects too quickly
     int swordUpgrade = 0; // the current sword upgrade level, used to determine the player's attack damage and reach
     boolean gameOver = false;
+
+
 
     
 
@@ -336,6 +352,7 @@ public class frame extends JFrame implements KeyListener {
 
     JLabel controls = GUIassets(550, 50, 400, 600,false, "images/GUI/controls.png", false, 0, true);
 
+    JLabel continueButton = GUIassets(100, 500, 400, 40, false, "images/GUI/continue.png", false, 1, true);
     JLabel SScredits = GUIassets(0, 0, 1040, 780,false, "images/GUI/creditsScreen.png", false, 2, true);
     JLabel startMenu = GUIassets(0,0, 1000, 1000, false, "images/GUI/placeHolderStart.png", false, 2, true);
     JLabel startCredits = GUIassets(100, 300, 400, 40, false, "images/GUI/startScreenCredits.png", false, 1, true);
@@ -1105,7 +1122,9 @@ public class frame extends JFrame implements KeyListener {
             GUIassets(100, 100, 100, 100, false, "images/equipment/emerald/right_emerald.png", false, 1, false),
             GUIassets(100, 100, 100, 100, false, "images/equipment/diamond/right_diamond.png", false, 1, false)
 
-    }; 
+    };
+
+    manageAssets manager = new manageAssets(this);
 
 
 // Method to play audio files, takes in the file path, number of repeats, and volume
@@ -1145,7 +1164,7 @@ public class frame extends JFrame implements KeyListener {
 
 // Method to start the game, starts when frame is called
 
-    frame() {
+    public frame() {
 
 
         // creates a new JFrame with the title "Pumpkin Quest", with a size of 1000x800 pixels, and sets it to close when the user clicks the close button
@@ -1159,6 +1178,32 @@ public class frame extends JFrame implements KeyListener {
         mining mine = new mining(this);
         mine.mining();
         System.out.println(mine.getListOfOres());
+
+
+        File reader = new File("saveGameData.json");
+        boolean saveExists = reader.exists();
+
+
+
+
+
+
+
+
+        if(saveExists) {
+            gameBeenSaved = true;
+        }
+
+
+
+
+        if(gameBeenSaved == true) {
+            maxMenuNumber = 4;
+            continueButton.setVisible(true);
+        } else {
+            maxMenuNumber = 3;
+            continueButton.setVisible(false);
+        }
 
 
 
@@ -1244,6 +1289,11 @@ public class frame extends JFrame implements KeyListener {
         player.setOpaque(false);
         backgroundPanel.setComponentZOrder(player, 2);
 
+        activeTool tools = new activeTool(this);
+        tools.toolTracker();
+        addKeyListener(tools);
+        setFocusable(true);
+        requestFocusInWindow(true);
         // sets x and y to the player's position
 
         x = player.getX();
@@ -1292,8 +1342,19 @@ public class frame extends JFrame implements KeyListener {
 
         SScredits.setVisible(false);
 
-        magicSystem magic = new magicSystem(this);
-        magic.magicSystem();
+        int[][] lightPositions = {{50, 50}, {100, 200}, {300, 450}, {10, 80}, {1500, -650}};
+
+        for (int[] pos : lightPositions) {
+            manager.loadAssets("light", pos[0], pos[1], 100, 100, "images/mining/light_shard.png", true, false, 3, true, true);
+        }
+
+       //  magicSystem magic = new magicSystem(this);
+         //magic.magicSystem();
+
+
+
+
+// You can even load these from a text file later!
 
 
 
@@ -1301,6 +1362,25 @@ public class frame extends JFrame implements KeyListener {
         gameLoop();
 
     }
+
+    public static int getFlameShards() {
+        return flameShards;
+    }
+
+    public static void setFlameShards(int flameShards) {
+        frame.flameShards = flameShards;
+    }
+
+    public static int getLightShards() {
+        return lightShards;
+    }
+
+    public static void setLightShards(int lightShards) {
+        frame.lightShards = lightShards;
+    }
+
+
+
 
     class Tile {
         JLabel label; // This is the JLabel that represents the tile
@@ -1491,7 +1571,7 @@ public class frame extends JFrame implements KeyListener {
 //All game code is run in this loop. Whenever the time per frame is reached (currently 1/60th of a second), the code is run.
         while(true) {
 
-            magicSystem.magicSpellLoop();
+
             //Counts how much time has passed
             currentTime = System.nanoTime(); // Gets the current time in nanoseconds
             placeholder += (currentTime - previousTime) / timePerFrame; // Calculates how many frames have passed since the last update
@@ -1499,7 +1579,16 @@ public class frame extends JFrame implements KeyListener {
             //If one frame has passed it runs code
             if (placeholder >= 1) { // If enough time has passed for one frame
                 interacting(); // Calls the interacting method to handle player interactions
+                /*if (magicSystem.magicOrb != null) {
+                    magicSystem.magicSpellLoop();
+                } */
 
+                timeSinceSave++;
+
+                if(timeSinceSave >= FPS * 20) { // Auto-saves every 5 minutes (300 seconds)
+                    saveData();
+                    timeSinceSave = 0; // Reset the timer after saving
+                }
 
                 //player.setBounds(super.getWidth() / 2 - 50, super.getHeight() / 2 - 100, player.getWidth(), player.getHeight());
 
@@ -1733,127 +1822,126 @@ public class frame extends JFrame implements KeyListener {
 
     public void AttackMob(String direction) {
 
-        switch (direction) { // switch statement to check the direction of the attack, so it can use the correct sword image and check for intersection with the mob
-            case "up" -> {
+            switch (direction) { // switch statement to check the direction of the attack, so it can use the correct sword image and check for intersection with the mob
+                case "up" -> {
 
 
-                // loops through the mob map, which contains all the mobs in the game, and checks if the upAttack JLabel intersects with the mob JLabel
-                for (Map.Entry<UUID, JLabel> entry : mob.entrySet()) { // code similar to geek by geeks post - https://www.geeksforgeeks.org/how-to-iterate-hashmap-in-java/
-                    // checks if the upAttack JLabel intersects with the mob JLabel, if it does, it deals damage to the mob
-                    if(upAttack[swordNumber].getBounds().intersects(entry.getValue().getBounds())) {
+                    // loops through the mob map, which contains all the mobs in the game, and checks if the upAttack JLabel intersects with the mob JLabel
+                    for (Map.Entry<UUID, JLabel> entry : mob.entrySet()) { // code similar to geek by geeks post - https://www.geeksforgeeks.org/how-to-iterate-hashmap-in-java/
+                        // checks if the upAttack JLabel intersects with the mob JLabel, if it does, it deals damage to the mob
+                        if (upAttack[swordNumber].getBounds().intersects(entry.getValue().getBounds())) {
 
-                        UUID mobID = entry.getKey(); // gets the UUID of the mob from the entry set
-                        JLabel mobLabel = entry.getValue(); // gets the JLabel of the mob from the entry set
+                            UUID mobID = entry.getKey(); // gets the UUID of the mob from the entry set
+                            JLabel mobLabel = entry.getValue(); // gets the JLabel of the mob from the entry set
 
 
-                        int mobHealth = MobHealth.get(mobID); // gets the health of the mob from the MobHealth map
+                            int mobHealth = MobHealth.get(mobID); // gets the health of the mob from the MobHealth map
 
-                        mobHealth -= playerDamage; // subtracts the playerDamage from the mob's health
+                            mobHealth -= playerDamage; // subtracts the playerDamage from the mob's health
 
-                        MobHealth.put(mobID, mobHealth); // updates the mob's health in the MobHealth map
+                            MobHealth.put(mobID, mobHealth); // updates the mob's health in the MobHealth map
 
-                        if (mobHealth <= 0) { // checks if the mob's health is less than or equal to 0, if it is, it removes the mob from the game
-                            mobRemove(mobID); // calls the mobRemove method to remove the mob from the game
-                        } else {
+                            if (mobHealth <= 0) { // checks if the mob's health is less than or equal to 0, if it is, it removes the mob from the game
+                                mobRemove(mobID); // calls the mobRemove method to remove the mob from the game
+                            } else {
+
+                            }
+
 
                         }
-
-
                     }
-                }
 
-            } //continue to the next 3 cases for the other directions
-            case "down" -> {
+                } //continue to the next 3 cases for the other directions
+                case "down" -> {
 
-                for (Map.Entry<UUID, JLabel> entry : mob.entrySet()) { // code similar to geek by geeks post - https://www.geeksforgeeks.org/how-to-iterate-hashmap-in-java/
+                    for (Map.Entry<UUID, JLabel> entry : mob.entrySet()) { // code similar to geek by geeks post - https://www.geeksforgeeks.org/how-to-iterate-hashmap-in-java/
 
-                    if(downAttack[swordNumber].getBounds().intersects(entry.getValue().getBounds())) {
+                        if (downAttack[swordNumber].getBounds().intersects(entry.getValue().getBounds())) {
 
-                        UUID mobID = entry.getKey();
-                        JLabel mobLabel = entry.getValue();
+                            UUID mobID = entry.getKey();
+                            JLabel mobLabel = entry.getValue();
 
 
-                        int mobHealth = MobHealth.get(mobID);
+                            int mobHealth = MobHealth.get(mobID);
 
-                        mobHealth -= playerDamage;
+                            mobHealth -= playerDamage;
 
-                        MobHealth.put(mobID, mobHealth);
+                            MobHealth.put(mobID, mobHealth);
 
-                        if (mobHealth <= 0) {
-                            mobRemove(mobID);
-                        } else {
+                            if (mobHealth <= 0) {
+                                mobRemove(mobID);
+                            } else {
+
+                            }
+
 
                         }
-
-
                     }
+
+
                 }
 
+                case "left" -> {
 
+                    for (Map.Entry<UUID, JLabel> entry : mob.entrySet()) { // code similar to geek by geeks post - https://www.geeksforgeeks.org/how-to-iterate-hashmap-in-java/
+
+                        if (leftAttack[swordNumber].getBounds().intersects(entry.getValue().getBounds())) {
+
+                            UUID mobID = entry.getKey();
+                            JLabel mobLabel = entry.getValue();
+
+
+                            int mobHealth = MobHealth.get(mobID);
+
+                            mobHealth -= playerDamage;
+
+                            MobHealth.put(mobID, mobHealth);
+
+                            if (mobHealth <= 0) {
+                                mobRemove(mobID);
+                            } else {
+                                // System.out.println("Mob Health: " + mobHealth);
+                            }
+
+
+                        }
+                    }
+
+                }
+
+                case "right" -> {
+
+                    for (Map.Entry<UUID, JLabel> entry : mob.entrySet()) { // code similar to geek by geeks post - https://www.geeksforgeeks.org/how-to-iterate-hashmap-in-java/
+
+                        if (rightAttack[swordNumber].getBounds().intersects(entry.getValue().getBounds())) {
+
+                            UUID mobID = entry.getKey();
+                            JLabel mobLabel = entry.getValue();
+
+
+                            int mobHealth = MobHealth.get(mobID);
+
+                            mobHealth -= playerDamage;
+
+                            MobHealth.put(mobID, mobHealth);
+
+                            if (mobHealth <= 0) {
+                                mobRemove(mobID);
+                            } else {
+                                // System.out.println("Mob Health: " + mobHealth);
+                            }
+
+
+                        }
+                    }
+
+                }
 
             }
 
-            case "left" -> {
-
-                for (Map.Entry<UUID, JLabel> entry : mob.entrySet()) { // code similar to geek by geeks post - https://www.geeksforgeeks.org/how-to-iterate-hashmap-in-java/
-
-                    if (leftAttack[swordNumber].getBounds().intersects(entry.getValue().getBounds())) {
-
-                        UUID mobID = entry.getKey();
-                        JLabel mobLabel = entry.getValue();
-
-
-                        int mobHealth = MobHealth.get(mobID);
-
-                        mobHealth -= playerDamage;
-
-                        MobHealth.put(mobID, mobHealth);
-
-                        if (mobHealth <= 0) {
-                            mobRemove(mobID);
-                        } else {
-                           // System.out.println("Mob Health: " + mobHealth);
-                        }
-
-
-                    }
-                }
-
-            }
-
-            case "right" -> {
-
-                for (Map.Entry<UUID, JLabel> entry : mob.entrySet()) { // code similar to geek by geeks post - https://www.geeksforgeeks.org/how-to-iterate-hashmap-in-java/
-
-                    if (rightAttack[swordNumber].getBounds().intersects(entry.getValue().getBounds())) {
-
-                        UUID mobID = entry.getKey();
-                        JLabel mobLabel = entry.getValue();
-
-
-                        int mobHealth = MobHealth.get(mobID);
-
-                        mobHealth -= playerDamage;
-
-                        MobHealth.put(mobID, mobHealth);
-
-                        if (mobHealth <= 0) {
-                            mobRemove(mobID);
-                        } else {
-                           // System.out.println("Mob Health: " + mobHealth);
-                        }
-
-
-                    }
-                }
-
-            }
 
         }
 
-
-
-    }
 
     // method for mob movment taking in speed, followDistance, and spawn Point. Uses linear equations for mob movement.
 
@@ -2032,10 +2120,6 @@ public class frame extends JFrame implements KeyListener {
                 }
 
 
-
-
-
-
             } else {
 
                 if (playerWorldPos.y > y) {
@@ -2161,7 +2245,7 @@ public class frame extends JFrame implements KeyListener {
 
             playerPastPositions.add(playerWorldPos.getLocation());
 
-            playerPastPositions.size();
+            playerPastPositions.size;
 
 
             slope = (double) (playerWorldPos.y - tortles.getY()) / (playerWorldPos.x - player.getX());
@@ -3037,54 +3121,54 @@ public class frame extends JFrame implements KeyListener {
     // Method that makes the player that gets the data of the player attacking mobs, and the direction they are attacking in
     public void attacking(String direction, boolean spacePressed) {
 
+    if(activeTool.sword) {
+        // depending on the direction the player is attacking in, it sets the corresponding attack JLabel to visible and the others to not visible
+        if (spacePressed) {
+            switch (direction) {
+                case "up" -> {
+                    upAttack[swordNumber].setVisible(true);
+                    leftAttack[swordNumber].setVisible(false);
+                    downAttack[swordNumber].setVisible(false);
+                    rightAttack[swordNumber].setVisible(false);
+                    AttackMob("up");
+                }
+                case "down" -> {
+                    downAttack[swordNumber].setVisible(true);
+                    upAttack[swordNumber].setVisible(false);
+                    rightAttack[swordNumber].setVisible(false);
+                    leftAttack[swordNumber].setVisible(false);
+                    AttackMob("down");
+                }
+                case "left" -> {
+                    leftAttack[swordNumber].setVisible(true);
+                    upAttack[swordNumber].setVisible(false);
+                    downAttack[swordNumber].setVisible(false);
+                    rightAttack[swordNumber].setVisible(false);
+                    AttackMob("left");
+                }
+                case "right" -> {
+                    rightAttack[swordNumber].setVisible(true);
+                    upAttack[swordNumber].setVisible(false);
+                    downAttack[swordNumber].setVisible(false);
+                    leftAttack[swordNumber].setVisible(false);
+                    AttackMob("right");
+                }
+                default -> {
+                    upAttack[swordNumber].setVisible(false);
+                    downAttack[swordNumber].setVisible(false);
+                    leftAttack[swordNumber].setVisible(false);
+                    rightAttack[swordNumber].setVisible(false);
+                }
 
-    // depending on the direction the player is attacking in, it sets the corresponding attack JLabel to visible and the others to not visible
-    if(spacePressed) {
-        switch (direction) {
-            case "up" -> {
-                upAttack[swordNumber].setVisible(true);
-                leftAttack[swordNumber].setVisible(false);
-                downAttack[swordNumber].setVisible(false);
-                rightAttack[swordNumber].setVisible(false);
-                AttackMob("up");
             }
-            case "down" -> {
-                downAttack[swordNumber].setVisible(true);
-                upAttack[swordNumber].setVisible(false);
-                rightAttack[swordNumber].setVisible(false);
-                leftAttack[swordNumber].setVisible(false);
-                AttackMob("down");
-            }
-            case "left" ->  {
-                leftAttack[swordNumber].setVisible(true);
-                upAttack[swordNumber].setVisible(false);
-                downAttack[swordNumber].setVisible(false);
-                rightAttack[swordNumber].setVisible(false);
-                AttackMob("left");
-            }
-            case "right" -> {
-                rightAttack[swordNumber].setVisible(true);
-                upAttack[swordNumber].setVisible(false);
-                downAttack[swordNumber].setVisible(false);
-                leftAttack[swordNumber].setVisible(false);
-                AttackMob("right");
-            }
-            default -> {
-                upAttack[swordNumber].setVisible(false);
-                downAttack[swordNumber].setVisible(false);
-                leftAttack[swordNumber].setVisible(false);
-                rightAttack[swordNumber].setVisible(false);
-            }
-
+        } else {
+            upAttack[swordNumber].setVisible(false);
+            downAttack[swordNumber].setVisible(false);
+            leftAttack[swordNumber].setVisible(false);
+            rightAttack[swordNumber].setVisible(false);
         }
-    } else {
-       upAttack[swordNumber].setVisible(false);
-      downAttack[swordNumber].setVisible(false);
-       leftAttack[swordNumber].setVisible(false);
-      rightAttack[swordNumber].setVisible(false);
+
     }
-
-
     }
 
 
@@ -3225,6 +3309,7 @@ public class frame extends JFrame implements KeyListener {
         endScreen.setVisible(true); // Shows the end screen
         escToQuit.setVisible(true); // Shows the "Press ESC to quit" text
         pumpkin.setVisible(true);  // Shows the pumpkin image
+        maxMenuNumber = 3;
         gameOver = true; // Sets the gameOver boolean to true, indicating the game is over
 
         player.setVisible(false); // Hides the player JLabel
@@ -3409,7 +3494,7 @@ public class frame extends JFrame implements KeyListener {
         if (key == KeyEvent.VK_DOWN && !menuAlreadyChanged) {
             startSelection++;
 
-            if (startSelection > 3) { 
+            if (startSelection > maxMenuNumber) {
                 startSelection = 1;
 //It then sets the menuAlreadyChanged boolean to true, which stops it from running again until the key has been released.
             menuAlreadyChanged = true;
@@ -3419,7 +3504,7 @@ public class frame extends JFrame implements KeyListener {
             startSelection--;
 
             if (startSelection < 1) {
-                startSelection = 3;
+                startSelection = maxMenuNumber;
             menuAlreadyChanged = true;
         }
     }
@@ -3431,6 +3516,8 @@ public class frame extends JFrame implements KeyListener {
             currentSelection.setLocation(25,292);
         } else if (startSelection == 3) {
             currentSelection.setLocation(25,392);
+        } else if(startSelection == 4) {
+            currentSelection.setLocation(25,492);
         }
         
     // This controls the actions that occur by checking if the space key is pressed and then what the selection is.
@@ -3446,6 +3533,9 @@ public class frame extends JFrame implements KeyListener {
                     controls.setVisible(false);
                     currentSelection.setVisible(false);
                     startScreenVisible = false;
+                    if(maxMenuNumber == 4) {
+                        continueButton.setVisible(false);
+                    }
                     // Starts the game loop
                     fadeOutStartScreen();
                     if(music) {
@@ -3470,6 +3560,9 @@ public class frame extends JFrame implements KeyListener {
                         startCredits.setVisible(false);
                         startQuit.setVisible(false);
                         currentSelection.setVisible(false);
+                        if(maxMenuNumber == 4) {
+                            continueButton.setVisible(false);
+                        }
                     } else {
                     // Does the reverse of the one before (removes the credits and puts up the regular start screen menu
                         SScredits.setVisible(false);
@@ -3479,6 +3572,10 @@ public class frame extends JFrame implements KeyListener {
                         startCredits.setVisible(true);
                         startQuit.setVisible(true);
                         currentSelection.setVisible(true);
+                        if(maxMenuNumber == 4) {
+                            continueButton.setVisible(true);
+                        }
+
                     }
                     
                     return;
@@ -3488,6 +3585,30 @@ public class frame extends JFrame implements KeyListener {
                     // Closes the game
 
                     break;
+                case 4:
+                    startPlay.setVisible(false);
+                    startCredits.setVisible(false);
+                    startQuit.setVisible(false);
+                    startMenu.setVisible(false);
+                    SScredits.setVisible(false);
+                    controls.setVisible(false);
+                    currentSelection.setVisible(false);
+                    startScreenVisible = false;
+                    continueButton.setVisible(false);
+                    loadGameData();
+                    // Starts the game loop
+                    fadeOutStartScreen();
+                    if(music) {
+                        try {
+                            stopClip();
+                            Sequencer("music" + File.separator + "korok.wav", 100, 0.5f); // Play the clip when the program starts
+                        } catch (UnsupportedAudioFileException | IOException | LineUnavailableException j) {
+                            j.printStackTrace(); // Handle exceptions
+                        }
+                    }
+
+                    return;
+
             }
         }
 
@@ -3506,6 +3627,7 @@ public class frame extends JFrame implements KeyListener {
             case KeyEvent.VK_E -> ePressed = true;
             case KeyEvent.VK_EQUALS -> volumeChange(0.1f);
             case KeyEvent.VK_MINUS -> volumeChange(-0.1f);
+            case KeyEvent.VK_R -> activeSpell += 1;
             case KeyEvent.VK_SPACE -> {
                 savedDirection = playerMovementInstance.direction; // Saves the direction the player is facing when they press space
                 attacking(savedDirection, true); // Calls the attacking method with the saved direction and sets spacePressed to true
@@ -3515,7 +3637,10 @@ public class frame extends JFrame implements KeyListener {
             case KeyEvent.VK_ESCAPE -> {
 
                 if(gameOver) { // If the game is over, pressing ESC will exit the game
-
+                    File saveFile = new File("saveGameData.json");
+                    if (saveFile.exists()) {
+                        saveFile.delete();
+                    }
                     System.exit(0); // If the game is over, exit the game
 
                 }
@@ -3706,7 +3831,52 @@ public class frame extends JFrame implements KeyListener {
     }
     }
     @Override
-    public void keyTyped(KeyEvent e) {}
-}
+    public void keyTyped(KeyEvent e) {
+    }
 
+    public void saveData() {
+
+        gameBeenSaved = true;
+
+       Gson gson = new GsonBuilder().setPrettyPrinting().create();
+       saveGameData data = new saveGameData();
+
+       data.playerHealth = this.currentHealth;
+       data.swordUpgrade = this.swordNumber;
+       data.playerPosition = this.playerWorldPos;
+       data.spawnPosition = this.SpawnPoint;
+       data.openedChests = this.chestLooted;
+       data.openedChestsInteraction = this.pressChestOn;
+       data.maximumHealth = this.maximumHealth;
+       data.gameBeenSaved = this.gameBeenSaved;
+
+        try(FileWriter writer = new FileWriter("saveGameData.json")) {
+            gson.toJson(data, writer);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void loadGameData() {
+        Gson gson = new Gson();
+        try(FileReader reader = new FileReader("saveGameData.json")) {
+            saveGameData data = gson.fromJson(reader, saveGameData.class);
+            Point tempPosition = data.playerPosition;
+            this.playerWorldPos.x = tempPosition.x;
+            this.playerWorldPos.y = tempPosition.y;
+            this.currentHealth = data.playerHealth;
+            this.swordNumber = data.swordUpgrade;
+            this.SpawnPoint = data.spawnPosition;
+            this.chestLooted = data.openedChests;
+            this.pressChestOn = data.openedChestsInteraction;
+            this.maximumHealth = data.maximumHealth;
+            this.gameBeenSaved = data.gameBeenSaved;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+
+
+}
 

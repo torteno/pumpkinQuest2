@@ -1,4 +1,6 @@
-package com.example.pumpkinquest;
+package com.example.pumpkinquest.miningSystsem;
+
+import com.example.pumpkinquest.frame;
 
 import javax.swing.JLabel;
 
@@ -7,6 +9,7 @@ public class mining {
     private frame mainFrame;
 
     public mining(frame gameFrame) {
+
         this.mainFrame = gameFrame;
     }
 
@@ -24,9 +27,8 @@ public class mining {
 
     public String getListOfOres() {
         return "Coal, Iron, Gold, Diamond, Emerald, Redstone, Lapis Lazuli";
-
-
     }
+
 
     
 }
