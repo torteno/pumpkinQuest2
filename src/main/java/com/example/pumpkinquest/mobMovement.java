@@ -4,10 +4,31 @@ import com.example.pumpkinquest.frame;
 import javax.swing.*;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.UUID;
 
 public class mobMovement extends frame {
 
+    static int nodeSize = 32;
+
     private frame myFrame;
+    int playerGridX = myFrame.playerWorldPos.x/nodeSize;
+    int playerGridY = myFrame.playerWorldPos.y/nodeSize;
+
+    HashMap<UUID, Integer> mobGridX = new HashMap<>();
+    HashMap<UUID, Integer> mobGridY = new HashMap<>();
+
+    int worldSizeX = 20000/nodeSize;
+    int worldSizeY = 20000/nodeSize;
+
+    nodes[][] grid = new nodes[worldSizeX][worldSizeY];
+
+
+
+
+
+
+
+
 
     public mobMovement(frame Frame) {
         this.myFrame = Frame;
@@ -35,13 +56,46 @@ public class mobMovement extends frame {
                 }
             }
         }
+    }
+
+    public void grid() {
+
+
+
+        JLabel checker =  myFrame.assets(startingPositionX, startingPositionY, nodeSize, nodeSize, false, "", false, 1, false);
+
+
+        nodes node = new nodes(nodeSize, nodeSize, -20000, -20000);
+
+        for(int i = 0; i < worldSizeX; i++) {
+            for(int j = 0; j < worldSizeY; j++) {
+
+                grid[i][j] = new nodes(nodeSize, nodeSize, i*nodeSize, j*nodeSize);
+
+
+
+                for(JLabel obstacle : myFrame.obstacles) {
+
+                    
+
+
+                }
+
+
+
+            }
+
+
+
+        }
+
+
+
 
 
 
 
     }
-
-
 
 
 

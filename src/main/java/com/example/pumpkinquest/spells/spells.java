@@ -25,6 +25,7 @@ public abstract class spells {
     public abstract void cast(spellContext context);
 
 
+
     public abstract void effect(JLabel target);
 
     public int getManaCost() {
