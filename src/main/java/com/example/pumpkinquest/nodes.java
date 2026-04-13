@@ -11,6 +11,8 @@ public class nodes {
     int gCost;
     int hCost;
     int fCost;
+    int gridX;
+    int gridY;
 
 
     public nodes(int nodeSizeX, int nodeSizeY, int positionX, int positionY) {

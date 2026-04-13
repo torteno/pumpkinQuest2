@@ -1949,7 +1949,7 @@ public class frame extends JFrame implements KeyListener {
 
     // method for mob movement, takes in the x and y position of the mob, the speed of the mob, the follow distance, and the spawn point of the mob.
     public Point mobMovement(int x, int y, int mobSpeed, int followDistance, Point spawnPoint) {
-        distance = Math.sqrt(Math.pow(((playerWorldPos.x - 40) - x), 2) + Math.pow(((playerWorldPos.y-50) - y), 2)); // calculates the distance between the player and the mob using the distance formula
+        distance = Math.sqrt(Math.pow(((playerWorldPos.x - 40) - x), 2) + Math.pow(((playerWorldPos.y - 50) - y), 2)); // calculates the distance between the player and the mob using the distance formula
 
 
 
