@@ -46,7 +46,6 @@ public class mobMovement extends frame {
 
     ArrayList<Integer> pathX = new ArrayList<>();
     ArrayList<Integer> pathY = new ArrayList<>();
-    ArrayList<nodes> neighbors = new ArrayList<>();
 
 
 
@@ -66,28 +65,47 @@ public class mobMovement extends frame {
     }
 
     public ArrayList<nodes> getNeighbors(nodes node) {
+        ArrayList<nodes> neighbors = new ArrayList<>();
 
         for(int x = -1; x <= 1; x++) {
-            for(int y = -1; x <= 1; y++) {
+            for(int y = -1; y <= 1; y++) {
 
                 if(x == 0 && y == 0) {
                     continue;
                 }
 
-                int checkNeighborX = node.gridX;
-                int checkNeighborY = node.gridY;
+                int checkNeighborX = node.gridX + x;
+                int checkNeighborY = node.gridY + y;
 
-                if(checkNeighborX
-
-
-
-
+                if(checkNeighborX >= 0 && checkNeighborX < worldSizeX && checkNeighborY >= 0 && checkNeighborY < worldSizeY) {
+                    neighbors.add(grid[checkNeighborX][checkNeighborY]);
+                }
 
             }
         }
+        return neighbors;
+    }
 
 
-        gain neighbors;
+    public double getDistance(Point mobLocation, Point endLocation) {
+        int distanceX = Math.abs(mobLocation.x - endLocation.x);
+        int distanceY = Math.abs(mobLocation.y - endLocation.y);
+
+        double distance = Math.sqrt((distanceX * distanceX) + (distanceY * distanceY));
+
+        return distance;
+    }
+
+
+    private void getCost(nodes node, mob mob) {
+
+        int distanceX = Math.abs(node.gridX - playerGridX);
+        int distanceY = Math.abs(node.gridY - playerGridY);
+        node.gCost = xDistance + distanceY;
+
+        distanceX = Math.abs(
+
+
     }
 
 
