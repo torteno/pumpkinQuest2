@@ -21,6 +21,15 @@ public class magicSystem {
     static HashMap<String, Integer> spellDamage = new HashMap<>();
     static HashMap<String, Integer> spellCast = new HashMap<>();
     static HashMap<String, Runnable> spellsHashmap = new HashMap<>();
+
+    public static ArrayList<spells> getActiveSpells() {
+        return activeSpells;
+    }
+
+    public static void addActiveSpells(spells spell) {
+        magicSystem.activeSpells.add(spell);
+    }
+
     //static HashMap<String, JLabel> activeSpells = new HashMap<>();
     static ArrayList<spells> activeSpells = new ArrayList<spells>();
     static HashMap<JLabel, Point> spellTargetPosition = new HashMap<>();

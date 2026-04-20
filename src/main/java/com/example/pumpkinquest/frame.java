@@ -2360,6 +2360,9 @@ public class frame extends JFrame implements KeyListener {
 
 
 
+
+
+
 //If armor is found in a chest, it increases health and maximum health by that amount
     public void armorIncrease(double armorInc) {
         maximumHealth += armorInc;
@@ -3117,6 +3120,13 @@ public class frame extends JFrame implements KeyListener {
             }
         }
     }
+
+
+    public Point getPlayerWorldPos() {
+        return playerWorldPos;
+    }
+
+
 
     // Method that makes the player that gets the data of the player attacking mobs, and the direction they are attacking in
     public void attacking(String direction, boolean spacePressed) {

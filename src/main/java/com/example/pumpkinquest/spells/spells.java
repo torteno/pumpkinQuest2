@@ -1,5 +1,7 @@
 package com.example.pumpkinquest.spells;
 
+import com.example.pumpkinquest.mob;
+
 import javax.swing.*;
 
 public abstract class spells {
@@ -26,7 +28,7 @@ public abstract class spells {
 
 
 
-    public abstract void effect(JLabel target);
+    public abstract void effect(mob target);
 
     public int getManaCost() {
         return manaCost;

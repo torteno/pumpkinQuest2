@@ -22,7 +22,7 @@ public abstract class ore extends JLabel {
 
     public void mine() {
         hits--;
-        System.out.println("HIT!");
+        System.out.println("debug mining: hit");
         if(hits <= 0) {
             oreDrops();
             label.getParent().remove(label);
