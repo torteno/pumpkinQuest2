@@ -39,10 +39,14 @@ public class music {
             }
         }
 
-        clip.stop();
+        if(clip != null && clip.isRunning()) {
+            clip.stop();
+        }
+
+
         clip = AudioSystem.getClip();
         clip.open(audioStream);
-        volumeChange(volume);
+        volumeChange(clip, volume);
         clip.start();
         clip.loop(numRepeat);
         clips.put(input, clip);
@@ -64,7 +68,7 @@ public class music {
         if (clip != null && clip.isRunning()) {
             clip.stop();
             clip.close();
-            clips.remove(clip);
+            clips.remove(clipName);
         }
     }
 
@@ -75,22 +79,28 @@ public class music {
         }
     }
 
-    public static void volumeChange(float volumeChange) {
+    public static void volumeChange(Clip clip, float volumeChange) {
 
-        volume += volumeChange; // Increases or decreases the volume by the given value
+        volume = volumeChange; // Increases or decreases the volume by the given value
         if (volume >= 1f) { // Ensures volume is between 0.0 and 1.0
             volume = 1f;
         } else if(volume <= 0f) {
-            volume = 0f; // Ensures volume is between 0.0 and 1.0
+            volume = 0.00001f; // Ensures volume is between 0.0 and 1.0
         }
 
         System.out.println(volume); // Print the current volume for debugging
 
 
-        FloatControl volumeControl = (FloatControl) clip.getControl(FloatControl.Type.MASTER_GAIN); // Get the volume control from the clip
         float dB = (float) (Math.log10(volume) * 20); // Convert volume (0.0 to 1.0) to decibels
-        volumeControl.setValue(dB); // Set the volume of the clip to the new value in decibels
 
+
+
+        for(Clip c : clips.values()) {
+            if(c != null && c.isRunning()) {
+                FloatControl volumeControl = (FloatControl) clip.getControl(FloatControl.Type.MASTER_GAIN); // Get the volume control from the clip
+                volumeControl.setValue(dB); // Set the volume of the clip to the new value in decibels
+            }
+        }
     }
 
 
