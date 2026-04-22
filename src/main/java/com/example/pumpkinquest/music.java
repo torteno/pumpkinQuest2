@@ -97,7 +97,7 @@ public class music {
 
         for(Clip c : clips.values()) {
             if(c != null && c.isRunning()) {
-                FloatControl volumeControl = (FloatControl) clip.getControl(FloatControl.Type.MASTER_GAIN); // Get the volume control from the clip
+                FloatControl volumeControl = (FloatControl) c.getControl(FloatControl.Type.MASTER_GAIN); // Get the volume control from the clip
                 volumeControl.setValue(dB); // Set the volume of the clip to the new value in decibels
             }
         }

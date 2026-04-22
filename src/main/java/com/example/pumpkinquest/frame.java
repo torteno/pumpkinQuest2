@@ -50,6 +50,8 @@ public class frame extends JFrame implements KeyListener {
 
     //declaration of variables that are used in the game, such as player position, movement, health, direction, and other game mechanics
 
+
+
     int x, y; // player position
     int step = 6; // player movement step size
     boolean upPressed = false, downPressed = false, leftPressed = false, rightPressed = false, qPressed = false, ePressed = false, plusPressed = false, minusPressed = false, spacePressed = false, kPressed = false, lPressed = false, onePressed = false, twoPressed = false, threePressed = false, fourPressed = false, fivePressed = false, sixPressed = false, sevenPressed = false, eightPressed = false, ninePressed = false, pPressed = false, enterPressed = false, escPressed = false; // player movement flags
@@ -79,6 +81,8 @@ public class frame extends JFrame implements KeyListener {
     int messageDisappearNumber = -1; // message disappearance number
 
     int maxMenuNumber = 3;
+
+    private mobAttack mobAttacks;
 
 
     int grandmaDialogueIndex = -1;
@@ -130,7 +134,7 @@ public class frame extends JFrame implements KeyListener {
     ArrayList<Tile> backgroundTiles = new ArrayList<>(); // stores the background tiles for the game, used to create the game world
     playerMovement playerMovementInstance; // instance of the player movement class that handles player movement and interactions with the game world
     Camera CameraInstance; // instance of the camera class that handles the camera position and view in the game world
-    public Point playerWorldPos = new Point(0, 0); // the world position of the player, used to determine the player's position in the game world
+    public static Point playerWorldPos = new Point(0, 0); // the world position of the player, used to determine the player's position in the game world
     public Point SpawnPoint = new Point(2360, -678); // the spawn point of the player, where the player starts in the game world
     public Point debugPoint = new Point(0, 0); // a debug point used for testing and debugging purposesee
 
@@ -1124,7 +1128,7 @@ public class frame extends JFrame implements KeyListener {
 
     };
 
-    manageAssets manager = new manageAssets(this);
+
 
 
 // Method to play audio files, takes in the file path, number of repeats, and volume
@@ -1342,11 +1346,14 @@ public class frame extends JFrame implements KeyListener {
 
         SScredits.setVisible(false);
 
-        int[][] lightPositions = {{50, 50}, {100, 200}, {300, 450}, {10, 80}, {1500, -650}};
 
-        for (int[] pos : lightPositions) {
-            manager.loadAssets("light", pos[0], pos[1], 100, 100, "images/mining/light_shard.png", true, false, 3, true, true);
-        }
+
+
+
+
+
+
+
 
        //  magicSystem magic = new magicSystem(this);
          //magic.magicSystem();
@@ -1356,6 +1363,8 @@ public class frame extends JFrame implements KeyListener {
 
 // You can even load these from a text file later!
 
+
+    mobAttacks = new mobAttack(this);
 
 
 // starts the game loop
@@ -1391,6 +1400,16 @@ public class frame extends JFrame implements KeyListener {
             this.worldPos = worldPos; // This is the position of the tile in the world
         }
     }
+
+
+    public void loadWorldObbjects() {
+
+        worldObjects worldObj = new worldObjects(frame);
+
+
+    }
+
+
 
     private void loadAndScalePlayerImages() {
         String[] imageNames = {"downStanding", "downFore", "downBack", "upStanding", "upFore", "upBack", "rightStanding", "rightFore", "rightBack", "leftStanding", "leftFore", "leftBack"};
@@ -1600,6 +1619,10 @@ public class frame extends JFrame implements KeyListener {
                 iceSpikeTwo.repaint();
                 //comment this when we want to submit
                 coordinates.setText((int) playerWorldPos.getX() + " " + (int) playerWorldPos.getY()); // Displays the player's world position in the coordinates JLabel
+
+
+                mobAttacks.attack();
+
 
 
                 //System.out.println(ghostWorldPos);

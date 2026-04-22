@@ -9,20 +9,68 @@ import java.io.IOException;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 
 public abstract class mob extends JLabel {
 
+
+
     private final int width, height;
-    private static int health;
+    private int health;
     private final int damage;
     private final int speed;
-    private static Point position;
+    private Point position;
     private ImageIcon icon;
     private final int followRange;
     private final boolean closeAttack;
     private final boolean rangedAttack;
-    private static LocalDateTime lastAttackTime;
+    private LocalDateTime lastAttackTime;
     private final long cooldown;
+    private int nodeX;
+    private int nodeY;
+    private double closeAttackRange = 100;
+
+    public double getRangedAttackRange() {
+        return rangedAttackRange;
+    }
+
+    public void setRangedAttackRange(double rangedAttackRange) {
+        this.rangedAttackRange = rangedAttackRange;
+    }
+
+    public double getCloseAttackRange() {
+        return closeAttackRange;
+    }
+
+    public void setCloseAttackRange(double closeAttackRange) {
+        this.closeAttackRange = closeAttackRange;
+    }
+
+    private  double rangedAttackRange = 500;
+
+
+    public ArrayList<nodes> currentPath = new ArrayList<>();
+
+    public int pathNum = 0;
+    public int tick = 0;
+
+
+    public int getNodeX() {
+        return nodeX;
+    }
+
+    public void setNodeX(int nodeX) {
+        this.nodeX = nodeX;
+    }
+
+    public int getNodeY() {
+        return nodeY;
+    }
+
+    public void setNodeY(int nodeY) {
+        this.nodeY = nodeY;
+    }
+
 
     public Point getMobSpawnPoint() {
         return mobSpawnPoint;
@@ -35,7 +83,7 @@ public abstract class mob extends JLabel {
     private Point mobSpawnPoint;
 
     private JLabel label;
-    protected static frame Frame;
+    protected frame Frame;
 
     public mob(JLabel label, frame myframe, int width , int height, int health, int damage, int speed, Point position, String icon, int followRange, boolean closeAttack, boolean rangedAttack, LocalDateTime lastAttackTime, long cooldown) {
         this.label = label;
@@ -45,6 +93,8 @@ public abstract class mob extends JLabel {
         this.damage = damage;
         this.speed = speed;
         this.position = position;
+        nodeX = position.x/mobMovement.nodeSize;
+        nodeY = position.y/mobMovement.nodeSize;
         this.icon = new ImageIcon(new ImageIcon(icon).getImage().getScaledInstance(width, height, Image.SCALE_DEFAULT));
         this.followRange = followRange;
         this.closeAttack = closeAttack;
@@ -52,13 +102,14 @@ public abstract class mob extends JLabel {
         this.lastAttackTime = lastAttackTime;
         this.cooldown = cooldown;
         this.mobSpawnPoint = position;
+        this.Frame = myframe;
     }
 
 
     public abstract void attackClose();
     public abstract void attackRanged();
 
-    public static void closeAttackDeafult(int cooldown, int damage, double range, boolean musicEffect) {
+    public void closeAttackDeafult(int cooldown, int damage, double range, boolean musicEffect) {
 
 
             int mobAttackCooldown = cooldown; // gets the mob's attack cooldown from the MobAttackCooldown map, if it doesn't exist, it defaults to 0
@@ -72,7 +123,6 @@ public abstract class mob extends JLabel {
             Point mobWorldPos = position; // gets the world position of the mob from the mobPoint map, which maps JLabels to Point objects
             double distance = Math.sqrt(Math.pow(((Frame.getPlayerWorldPos().x - 40) - mobWorldPos.getX()), 2) + Math.pow(((Frame.getPlayerWorldPos().y - 50) - mobWorldPos.getY()), 2)); // calculates the distance between the player and the mob using the distance formula
 
-           lastAttackTime = LocalDateTime.now();
 
 
          //   mobDistance = distance; // updates the mobDistance variable with the calculated distance
@@ -82,8 +132,12 @@ public abstract class mob extends JLabel {
 
 
            Duration durationMobAttack = Duration.between(lastAttackTime, LocalDateTime.now()); // calculates the duration since the mob was last attacked by subtracting the time since the last attack from the current time
+        lastAttackTime = LocalDateTime.now();
 
-            mobCooldown = (Math.abs(timeSinceAttack.get(ChronoUnit.SECONDS))); // calculates the mob's current cooldown by getting the absolute value of the duration in seconds since the last attack
+
+
+
+        mobCooldown = (Math.abs(timeSinceAttack.get(ChronoUnit.SECONDS))); // calculates the mob's current cooldown by getting the absolute value of the duration in seconds since the last attack
 
            // MobAttackCurrentCoolDown.put(mobID, mobCooldown); // updates the MobAttackCurrentCoolDown map with the new cooldown value for the mob
 
@@ -108,7 +162,7 @@ public abstract class mob extends JLabel {
         }
 
 
-    public static void rangedAttackDefault(String projectileFilePath, int projectileSpeed, double range) {
+    public void rangedAttackDefault(String projectileFilePath, int projectileSpeed, double range) {
 
 
 
@@ -154,11 +208,11 @@ public abstract class mob extends JLabel {
         return damage;
     }
 
-    public static void setHealth(int health) {
+    public void setHealth(int health) {
         this.health = health;
     }
 
-    public static int getHealth() {
+    public int getHealth() {
         return health;
     }
 

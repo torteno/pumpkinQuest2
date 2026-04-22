@@ -11,7 +11,7 @@ import java.util.UUID;
 
 public class mobMovement extends frame {
 
-    static int nodeSize = 32;
+    public static final int nodeSize = 32;
 
     private frame myFrame;
     int playerGridX = myFrame.playerWorldPos.x/nodeSize;
@@ -30,11 +30,11 @@ public class mobMovement extends frame {
 
 
 
-    frame my6Frame = new frame();
 
 
 
     public mobMovement(frame Frame) {
+
         this.myFrame = Frame;
     }
 
@@ -42,7 +42,7 @@ public class mobMovement extends frame {
     ArrayList<Integer> blockedY = new ArrayList<>();
 
 
-    public final int nodeSize = 8;
+    //public final int nodeSize = 8;
 
     ArrayList<Integer> pathX = new ArrayList<>();
     ArrayList<Integer> pathY = new ArrayList<>();

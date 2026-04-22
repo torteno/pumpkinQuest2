@@ -3,6 +3,7 @@ package com.example.pumpkinquest;
 import com.example.pumpkinquest.miningSystsem.fireOre;
 import com.example.pumpkinquest.miningSystsem.lightOre;
 import com.example.pumpkinquest.miningSystsem.ore;
+import com.example.pumpkinquest.mobs.skeleton;
 
 import javax.swing.*;
 import java.awt.event.MouseAdapter;
@@ -16,6 +17,10 @@ public class manageAssets {
     HashMap<JLabel, String> assetMap = new HashMap<>();
 
     HashMap<JLabel, ore> ores = new HashMap<>();
+
+    public static HashMap<JLabel, mob> mobs = new HashMap<>();
+
+
 
     public manageAssets(frame myFrame) {
         this.MyFrame = myFrame;
@@ -34,7 +39,7 @@ public class manageAssets {
         }
     }
 
-    public void loadAssets(String assetType, int x, int y, int width, int height, String image, boolean obstacle, boolean opaque, int zOrder, boolean visible, boolean isOre) {
+    public void loadAssets(String assetType, int x, int y, int width, int height, String image, boolean obstacle, boolean opaque, int zOrder, boolean visible, boolean isOre, boolean isMob) {
 
         JLabel label = MyFrame.assets(x, y, width, height, obstacle, image, opaque, zOrder, visible);
 
@@ -48,21 +53,23 @@ public class manageAssets {
                 ores.put(label, type);
             }
 
-
-            if (isOre) {
-                label.addMouseListener(new MouseAdapter() {
-                    @Override
+            label.addMouseListener(new MouseAdapter() {
+                @Override
                     public void mouseClicked(MouseEvent e) {
                         handleOreClick((JLabel) e.getSource());
-                    }
+
+                }
                 });
-
-
-            }
         }
 
-
-
+        if(isMob) {
+            mob type;
+            if (assetType.equalsIgnoreCase("skeleton")) {
+                type = new skeleton(label, MyFrame);
+                mobs.put(label, type);
+            }
+        }
+        }
 
     }
-}
+
