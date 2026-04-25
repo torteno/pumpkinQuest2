@@ -8,8 +8,8 @@ import java.net.URL;
 
 class BackgroundPanel extends JPanel {
 
-    // The background image to be displayed in the panel
-    private Image backgroundImage;
+    // The background image to be displayed in the panel — loaded once in the constructor.
+    private final Image backgroundImage;
 
 
     //  Constructor that initializes the background image from a file

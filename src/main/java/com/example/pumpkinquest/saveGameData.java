@@ -1,8 +1,11 @@
 package com.example.pumpkinquest;
 
-import java.awt.*;
+import com.example.pumpkinquest.quests.quests;
 
-public class saveGameData {
+import java.awt.*;
+import java.util.ArrayList;
+
+public class saveGameData { // This class basically is like a bridge between the game and the save file, describing what data needs to be saved and loaded, and in what format
 
     public int swordUpgrade;
     public Point playerPosition;
@@ -14,4 +17,5 @@ public class saveGameData {
     public boolean[] openedChestsInteraction;
     public double maximumHealth;
     public boolean gameBeenSaved;
+    public ArrayList<quests> completedQuests;
 }

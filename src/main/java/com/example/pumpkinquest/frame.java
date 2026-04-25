@@ -2,6 +2,10 @@ package com.example.pumpkinquest;
 
 import com.example.pumpkinquest.miningSystsem.mining;
 import com.example.pumpkinquest.activeTool;
+import com.example.pumpkinquest.mobs.*;
+import com.example.pumpkinquest.quests.collectStoneSword;
+import com.example.pumpkinquest.quests.questManagementSystem;
+import com.example.pumpkinquest.spells.spells;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -17,6 +21,8 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -32,6 +38,8 @@ import javax.swing.JLabel;
 
 import java.awt.event.MouseListener;
 import java.awt.event.MouseEvent;
+
+import static com.example.pumpkinquest.manageAssets.mobs;
 
 
 public class frame extends JFrame implements KeyListener {
@@ -60,6 +68,21 @@ public class frame extends JFrame implements KeyListener {
     int tortlesMoveDir; // tortles movement direction
     int FPS = 60; // frames per second
     double currentHealth = 3.0, maximumHealth = 3.0; // player health
+    // Guard so gameLoop() only ever has one running while-loop, even if it gets called from
+    // both the constructor and startGame() (which would otherwise run game logic on two threads).
+    private volatile boolean gameLoopRunning = false;
+    // Cached heart UI — built once on first healthChange() call, then reused. Without this,
+    // every hit on the player created a fresh JLabel with a freshly-decoded PNG and never
+    // removed the old ones, leaking heap forever.
+    private final java.util.List<JLabel> heartSlots = new java.util.ArrayList<>();
+    private JLabel halfHeartSlot;
+    private ImageIcon emptyHeartIcon;
+    private ImageIcon fullHeartIcon;
+    private ImageIcon halfHeartIcon;
+    // Shared sprite cache. Key = "<path>|<width>x<height>". Each unique tuple is decoded once
+    // for the whole run — the 800+ assets()/GUIassets()/mobCreation() calls reuse the same
+    // ImageIcon instead of decoding their PNG each time.
+    private static final java.util.Map<String, ImageIcon> SPRITE_CACHE = new java.util.HashMap<>();
     String direction = "down"; // player direction
     double distance; // distance moved by the player
     double slope; // slope of the player's movement
@@ -82,7 +105,8 @@ public class frame extends JFrame implements KeyListener {
 
     int maxMenuNumber = 3;
 
-    private mobAttack mobAttacks;
+    private mobAttack mobAttacks; // mob attack system
+    public mobMovement mobMovementSystem; // mob movement system
 
 
     int grandmaDialogueIndex = -1;
@@ -99,7 +123,7 @@ public class frame extends JFrame implements KeyListener {
     // creates maps for different attributes of the mobs and data that is getting stored.
 
     Map<UUID, Point> mobSpawnPoint = new HashMap<>();
-    Map<JLabel, Point> AssetPoint = new HashMap<>();
+    public static Map<JLabel, Point> AssetPoint = new HashMap<>();
     Map<JLabel, Point> mobPoint = new HashMap<>();
     public Map <UUID, JLabel> mob = new HashMap<>();
     public Map<JLabel, UUID> reverseMobMap = new HashMap<>();
@@ -121,24 +145,28 @@ public class frame extends JFrame implements KeyListener {
 
     int timeSinceSave = 0;
 
-    private static int flameShards = 0;
-    private static int lightShards = 0;
+    private static int flameShards = 0; // number of flame shards the player has
+    private static int lightShards = 0; // number of light shards the player has
+
+    questManagementSystem questSystem; // instance of the quest management system that handles the quests in the game, used to create and manage the quests for the player
 
 
     //ArrayList<Point> playerPastPoints = new ArrayList<>();
     Map<String, ImageIcon> playerImages = new HashMap<>(); // stores the player images for different directions and actions
     Map<String, ImageIcon> tortlesImages = new HashMap<>(); // stores the tortles images for different directions and actions
-    ArrayList<JLabel> obstacles = new ArrayList<>(); // stores the obstacles in the game, such as trees, rocks, and other barriers
+    public ArrayList<JLabel> obstacles = new ArrayList<>(); // stores the obstacles in the game, such as trees, rocks, and other barriers
     ArrayList<JLabel> passables = new ArrayList<>(); // stores the passable objects in the game, such as doors, chests, and other interactable objects
 
     ArrayList<Tile> backgroundTiles = new ArrayList<>(); // stores the background tiles for the game, used to create the game world
     playerMovement playerMovementInstance; // instance of the player movement class that handles player movement and interactions with the game world
-    Camera CameraInstance; // instance of the camera class that handles the camera position and view in the game world
+    public Camera CameraInstance; // instance of the camera class that handles the camera position and view in the game world
     public static Point playerWorldPos = new Point(0, 0); // the world position of the player, used to determine the player's position in the game world
     public Point SpawnPoint = new Point(2360, -678); // the spawn point of the player, where the player starts in the game world
     public Point debugPoint = new Point(0, 0); // a debug point used for testing and debugging purposesee
 
     JLabel coordinates = new JLabel(); // label to display the player's coordinates in the game world, used for debugging and testing purposes
+    JLabel activeSpellText = new JLabel("Active Spell: Fireball"); // shown when staff is active so the player knows which spell is selected
+  //  public JLabel questDisplay = new JLabel(); // current quest text — populated by questManagementSystem
     BackgroundPanel backgroundPanel = new BackgroundPanel(null); // background panel that displays the game background, used to create the game world
     static Clip clip; // audio clip for background music and sound effects, used to enhance the game experience
     boolean gameStarted = false; // flag to check if the game has started, used to control the game flow and logic
@@ -1128,6 +1156,9 @@ public class frame extends JFrame implements KeyListener {
 
     };
 
+    public JLabel questDisplay = GUIassets(20, 125, 200, 125, false, "images/GUI/coordinateBox.png", false, 3, true); // displays the current quest
+
+    collectStoneSword collectSwordQuest = new collectStoneSword(); // instance of the collect stone sword quest
 
 
 
@@ -1228,6 +1259,8 @@ public class frame extends JFrame implements KeyListener {
                 j.printStackTrace(); // Handle exceptions
             }
         }
+
+
 
 
         backgroundPanel.setLayout(null);
@@ -1355,8 +1388,8 @@ public class frame extends JFrame implements KeyListener {
 
 
 
-       //  magicSystem magic = new magicSystem(this);
-         //magic.magicSystem();
+         magicSystem magic = new magicSystem(this);
+         magic.magicSystem();
 
 
 
@@ -1365,6 +1398,12 @@ public class frame extends JFrame implements KeyListener {
 
 
     mobAttacks = new mobAttack(this);
+
+    mobMovementSystem = new mobMovement(this);
+    mobMovementSystem.grid();
+    loadWorldObjects();
+
+    questSystem = new questManagementSystem(this);
 
 
 // starts the game loop
@@ -1402,11 +1441,9 @@ public class frame extends JFrame implements KeyListener {
     }
 
 
-    public void loadWorldObbjects() {
-
-        worldObjects worldObj = new worldObjects(frame);
-
-
+    public void loadWorldObjects() {
+        worldObjects worldObj = new worldObjects(this);
+        worldObj.loadWorldObjects();
     }
 
 
@@ -1492,16 +1529,41 @@ public class frame extends JFrame implements KeyListener {
 
 
 
-    public JLabel assets(int x, int y, int width, int height, boolean obstacle, String filePath, boolean opaque, int zOrder, boolean visible) {
-        ImageIcon Icon = null;
+    // Decode + scale a PNG once and reuse the resulting ImageIcon. Without this every
+    // assets()/GUIassets()/mobCreation() call decoded its source PNG fresh and held both the
+    // original and a scaled copy, blowing the heap before the game even drew a frame.
+    private ImageIcon getSprite(String filePath, int width, int height) {
+        String key = filePath + "|" + width + "x" + height;
+        ImageIcon cached = SPRITE_CACHE.get(key);
+        if (cached != null) return cached;
+
+        ImageIcon raw;
         URL imageURL = getClass().getResource("/" + filePath);
         if (imageURL != null) {
-            Icon = new ImageIcon(imageURL); // Load from classpath
+            raw = new ImageIcon(imageURL);
         } else {
-            Icon = new ImageIcon(filePath); // Fallback to file path
+            raw = new ImageIcon(filePath);
         }
-        Image scaledImage = Icon.getImage().getScaledInstance(width, height, Image.SCALE_DEFAULT);
-        Icon = new ImageIcon(scaledImage);
+
+        // Render the source image into a sized BufferedImage now, so the source can be GC'd.
+        java.awt.image.BufferedImage scaled = new java.awt.image.BufferedImage(
+                Math.max(1, width), Math.max(1, height),
+                java.awt.image.BufferedImage.TYPE_INT_ARGB);
+        java.awt.Graphics2D g = scaled.createGraphics();
+        g.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION,
+                java.awt.RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+        g.drawImage(raw.getImage(), 0, 0, width, height, null);
+        g.dispose();
+        raw.getImage().flush();
+
+        ImageIcon icon = new ImageIcon(scaled);
+        SPRITE_CACHE.put(key, icon);
+        return icon;
+    }
+
+
+    public JLabel assets(int x, int y, int width, int height, boolean obstacle, String filePath, boolean opaque, int zOrder, boolean visible) {
+        ImageIcon Icon = getSprite(filePath, width, height);
         JLabel label = new JLabel(Icon);
         label.setBounds(x, y, width, height); // Set the bounds of the JLabel to the specified x, y, width, and height
         if (obstacle) { // If the asset is an obstacle, add it to the obstacles list, else add it to the passables list
@@ -1539,15 +1601,7 @@ public class frame extends JFrame implements KeyListener {
     // method to create assets that do not move based on the player position, meaning they stay stationary on screen.
 
     public JLabel GUIassets(int x, int y, int width, int height, boolean obstacle, String filePath, boolean opaque, int zOrder, boolean visible) {
-        ImageIcon Icon = null;
-        URL imageURL = getClass().getResource("/" + filePath);
-        if (imageURL != null) {
-            Icon = new ImageIcon(imageURL); // Load from classpath
-        } else {
-            Icon = new ImageIcon(filePath); // Fallback to file path
-        }
-        Image scaledImage = Icon.getImage().getScaledInstance(width, height, Image.SCALE_DEFAULT);
-        Icon = new ImageIcon(scaledImage);
+        ImageIcon Icon = getSprite(filePath, width, height);
         JLabel label = new JLabel(Icon);
         label.setBounds(x, y, width, height); // Set the bounds of the JLabel to the specified x, y, width, and height
         if (obstacle) {
@@ -1580,6 +1634,12 @@ public class frame extends JFrame implements KeyListener {
 
 //Main game loop: All game code is run in this method (called once at start)
     private void gameLoop() {
+        // gameLoop() is called from both the constructor and startGame(); without this guard
+        // the second call would spawn a parallel while(true) loop on a different thread, doubling
+        // the game's effective tick rate (the "accelerating speed" bug).
+        if (gameLoopRunning) return;
+        gameLoopRunning = true;
+
         //Creates a timer system for the FPS system (using nanoTime to be precise)
         long previousTime = System.nanoTime(); // Variable to hold the previous time in nanoseconds
         double placeholder = 0; // Placeholder to keep track of how many frames have passed
@@ -1598,9 +1658,7 @@ public class frame extends JFrame implements KeyListener {
             //If one frame has passed it runs code
             if (placeholder >= 1) { // If enough time has passed for one frame
                 interacting(); // Calls the interacting method to handle player interactions
-                /*if (magicSystem.magicOrb != null) {
-                    magicSystem.magicSpellLoop();
-                } */
+                magicSystem.magicSpellLoop();
 
                 timeSinceSave++;
 
@@ -1621,7 +1679,67 @@ public class frame extends JFrame implements KeyListener {
                 coordinates.setText((int) playerWorldPos.getX() + " " + (int) playerWorldPos.getY()); // Displays the player's world position in the coordinates JLabel
 
 
-                mobAttacks.attack();
+                // --- new-mob system update ---
+                // The legacy mobPoint loop (further down) handles legacy mob movement; this loop
+                // drives the abstract mob system: pathfinding, follow range, AssetPoint sync, death.
+
+                mobMovementSystem.playerGridX = (playerWorldPos.x + mobMovement.WORLD_OFFSET) / mobMovement.nodeSize; // gets the player's grid x
+                mobMovementSystem.playerGridY = (playerWorldPos.y + mobMovement.WORLD_OFFSET) / mobMovement.nodeSize; // gets the player's grid y
+                if (mobMovementSystem.playerGridX < 0) mobMovementSystem.playerGridX = 0; // checks if the player's grid x is less than 0 and sets it to 0 if it is
+                if (mobMovementSystem.playerGridX >= mobMovementSystem.worldSizeX) mobMovementSystem.playerGridX = mobMovementSystem.worldSizeX - 1; // checks if the player's grid x is greater than the world size x and sets it to the world size x - 1 if it is
+                if (mobMovementSystem.playerGridY < 0) mobMovementSystem.playerGridY = 0; // checks if the player's grid y is less than 0 and sets it to 0 if it is
+                if (mobMovementSystem.playerGridY >= mobMovementSystem.worldSizeY) mobMovementSystem.playerGridY = mobMovementSystem.worldSizeY - 1; // checks if the player's grid y is greater than the world size y and sets it to the world size y - 1 if it is
+
+                // Update each active spell projectile, drop the ones that have stopped.
+                Iterator<spells> spellIterator = magicSystem.getActiveSpells().iterator(); // gets the next active spell
+                while(spellIterator.hasNext()) {
+                    spells spell = spellIterator.next(); // gets the next active spell
+                    spell.update(); // updates the spell
+                    if(!spell.isMoving()) {
+                        spellIterator.remove(); // removes the spell if it is not moving
+                    }
+                }
+
+                // Mana regen
+                if (magicSystem.mana < 100) { // checks if the mana is less than 100 and adds mana regeneration if it is
+                    magicSystem.mana += magicSystem.manaRegeneration; // adds mana regeneration to the mana
+                }
+
+                // Snapshot the entry set so we can safely remove dead mobs while iterating.
+                List<Map.Entry<JLabel, mob>> mobSnapshot = new ArrayList<>(mobs.entrySet()); // gets the next active mob
+                for(Map.Entry<JLabel, mob> mobEntry : mobSnapshot) {
+                    JLabel mobLabel = mobEntry.getKey(); // gets the next active mob
+                    mob mobs = mobEntry.getValue(); // gets the next active mob
+
+                    // Despawn dead mobs and skip the rest of their tick.
+                    if (mobs.isDead()) { // checks if the mob is dead
+                        if (mobLabel != null) { // checks if the mob label is not null
+                            mobLabel.setVisible(false); // sets the mob label to not visible
+                            AssetPoint.remove(mobLabel); // removes the mob label from the asset point
+                        }
+                        manageAssets.mobs.remove(mobLabel); // removes the mob from the active mobs
+                        continue; // continues to the next mob
+                    }
+
+                    // Compare WORLD positions (the mob's tracked world position vs the player's world position)
+                    int distanceX = Math.abs(mobs.getPosition().x - playerWorldPos.x); // gets the distance between the mob and the player in the x direction
+                    int distanceY = Math.abs(mobs.getPosition().y - playerWorldPos.y); // gets the distance between the mob and the player in the y direction
+                    double distance = Math.sqrt((distanceX * distanceX) + (distanceY * distanceY)); // gets the distance between the mob and the player
+
+                    nodes targetNode = mobMovementSystem.getNode(mobMovementSystem.playerGridX, mobMovementSystem.playerGridY); // gets the target node for the mob
+
+                    if(distance <= mobs.getFollowRange()) { // checks if the mob is within the follow range
+                        Point newMobPosition = mobMovementSystem.mobMovementAcrossNodes(mobs, targetNode); // gets the new position for the mob
+                        mobs.setPosition(newMobPosition);
+                        // Update the *visible* label's stored world position — the AssetPoint
+                        // loop further down redraws it on the camera each frame.
+                        if (mobLabel != null) { // checks if the mob label is not null
+                            AssetPoint.put(mobLabel, newMobPosition); // updates the mob label's stored world position
+                        }
+                    }
+                }
+
+                mobAttacks.attack(); // makes the mobs attack
 
 
 
@@ -1654,6 +1772,9 @@ public class frame extends JFrame implements KeyListener {
                             dialogueActive = false;
                             NPCInteracted[NPCNumber - 1] = true;
                             NPCBackground.setVisible(false);
+
+
+                            questSystem.startQuest(collectSwordQuest); // starts the collect stone sword quest
 
 
                         }
@@ -1711,6 +1832,12 @@ public class frame extends JFrame implements KeyListener {
 
                 if (!GUIOpen) { // If the GUI is not open, the game will run normally
                     backgroundPanel.setComponentZOrder(player, 0);
+                    // When the staff is out, the orb sits inside the player's hitbox at radius 80,
+                    // so it gets hidden behind the player JLabel. Push the orb to z-order 0 (topmost
+                    // in Swing) AFTER the player push so it stays visible while aiming.
+                    if (activeTool.staff && magicSystem.magicOrb != null) {
+                        backgroundPanel.setComponentZOrder(magicSystem.magicOrb, 0);
+                    }
                 }
 
 
@@ -1871,6 +1998,16 @@ public class frame extends JFrame implements KeyListener {
                             }
 
 
+
+
+                        }
+
+                        for(mob mobs : manageAssets.mobs.values()) {
+                            if (upAttack[swordNumber].getBounds().intersects(mobs.getBounds())) {
+                                mobs.takeDamage(playerDamage);
+                                break;
+                            }
+
                         }
                     }
 
@@ -1898,7 +2035,20 @@ public class frame extends JFrame implements KeyListener {
                             }
 
 
+
+
+
                         }
+
+                        for(mob mobs : manageAssets.mobs.values()) {
+                            if (downAttack[swordNumber].getBounds().intersects(mobs.getBounds())) {
+                                mobs.takeDamage(playerDamage);
+                                break;
+                            }
+
+                        }
+
+
                     }
 
 
@@ -1928,6 +2078,15 @@ public class frame extends JFrame implements KeyListener {
 
 
                         }
+
+                        for(mob mobs : manageAssets.mobs.values()) {
+                            if (leftAttack[swordNumber].getBounds().intersects(mobs.getBounds())) {
+                                mobs.takeDamage(playerDamage);
+                                break;
+                            }
+
+                        }
+
                     }
 
                 }
@@ -1956,6 +2115,16 @@ public class frame extends JFrame implements KeyListener {
 
 
                         }
+
+                        for(mob mobs : manageAssets.mobs.values()) {
+                            if (rightAttack[swordNumber].getBounds().intersects(mobs.getBounds())) {
+                                mobs.takeDamage(playerDamage);
+                                break;
+                            }
+
+                        }
+
+
                     }
 
                 }
@@ -2355,7 +2524,7 @@ public class frame extends JFrame implements KeyListener {
     //method to create mobs with all of the nessicary attributes
  // this method creates a JLabel for the mob, sets its bounds, adds it to the background panel, and adds all of the mob attributes to the maps
     public JLabel mobCreation(int x, int y, int width, int height, String filePath, int zOrder, int health, double damage, int range, int speed, int followDistance, int attackCooldown) {
-        ImageIcon icon = new ImageIcon(new ImageIcon(filePath).getImage().getScaledInstance(width, height, Image.SCALE_DEFAULT)); // scales the image to the width and height given
+        ImageIcon icon = getSprite(filePath, width, height);
         JLabel label = new JLabel(icon); // creates a JLabel with the icon of the mob
         label.setBounds(x, y, width, height); // sets the bounds of the JLabel to the x, y, width, and height given
         label.setOpaque(false); // sets the JLabel to not opaque, so it can see through it
@@ -2396,43 +2565,79 @@ public class frame extends JFrame implements KeyListener {
     public void healthChange(double healthChange) {
 
         if (!GUIOpen) {
-            //Increases current health variable
             currentHealth += healthChange;
-            //Ensures health doesn't go over maximum
             if (currentHealth > maximumHealth) {
                 currentHealth = maximumHealth;
             }
 
-            //If player's health goes below 0, they are teleported to the start and health is reset
+            // If player's health goes below 0, teleport to spawn and reset.
             if (currentHealth <= 0) {
                 playerWorldPos.setLocation(SpawnPoint);
                 healthChange(maximumHealth);
             }
-            //It refreshed the shown hearts: Maximum health is drawn first (the blank hearts)
-            for (int i = 1; i <= maximumHealth; i++) {
-                //For the maximum health amount a new blank heart is created and displaced 60 units to the right
-                JLabel emptyHeart = GUIassets(10 + (60 * (i - 1)), 10, 50, 50, false, "images/GUI/emptyHeart.png", false, 1, true);
-                backgroundPanel.setComponentZOrder(emptyHeart, 1);
-                emptyHeart.repaint();
-            }
-            //It refreshed the shown hearts: Current health is drawn second (the full hearts)
-            for (int i = 1; i <= currentHealth; i++) {
-                //For the current health amount a new full heart is created and displaced 60 units to the right
-                JLabel fullHeart = GUIassets(10 + (60 * (i - 1)), 10, 50, 50, false, "images/GUI/fullHeart.png", false, 0, true);
-                backgroundPanel.setComponentZOrder(fullHeart, 0);
-                fullHeart.repaint();
-            }
-            //It refreshed the shown hearts: Half health is drawn last (the half hearts)
-            if (currentHealth % 1.0 != 0) {
-                //If the health is a decimal (we only really have 0.5 currently), it places its position relative to current health
-                JLabel halfHeart = GUIassets((int) (-20 + (60 * currentHealth)), 10, 50, 50, false, "images/GUI/halfHeart.png", false, 0, true);
-                backgroundPanel.setComponentZOrder(halfHeart, 0);
-                halfHeart.repaint();
-            }
+            // The old version created a fresh JLabel + freshly-decoded PNG for every heart on
+            // every call and never removed the old ones — leaking heap. renderHearts() reuses
+            // cached labels and icons.
+            renderHearts();
+        }
+    }
+
+
+    private ImageIcon loadHeartIcon(String path) {
+        java.net.URL url = getClass().getResource("/" + path);
+        ImageIcon raw = (url != null) ? new ImageIcon(url) : new ImageIcon(path);
+        return new ImageIcon(raw.getImage().getScaledInstance(50, 50, Image.SCALE_DEFAULT));
+    }
+
+
+    // Reuses cached heart JLabels and ImageIcons. Grows the slot list if maximumHealth increases,
+    // toggles each slot between empty/full by swapping icons. No JLabel allocation per call once
+    // the slots are built.
+    private void renderHearts() {
+        if (emptyHeartIcon == null) emptyHeartIcon = loadHeartIcon("images/GUI/emptyHeart.png");
+        if (fullHeartIcon == null) fullHeartIcon = loadHeartIcon("images/GUI/fullHeart.png");
+        if (halfHeartIcon == null) halfHeartIcon = loadHeartIcon("images/GUI/halfHeart.png");
+
+        int max = (int) Math.ceil(maximumHealth);
+
+        // Grow the slot list to cover maximumHealth.
+        while (heartSlots.size() < max) {
+            int i = heartSlots.size();
+            JLabel slot = new JLabel(emptyHeartIcon);
+            slot.setBounds(10 + (60 * i), 10, 50, 50);
+            slot.setOpaque(false);
+            backgroundPanel.add(slot);
+            backgroundPanel.setComponentZOrder(slot, 0);
+            heartSlots.add(slot);
         }
 
+        if (halfHeartSlot == null) {
+            halfHeartSlot = new JLabel(halfHeartIcon);
+            halfHeartSlot.setBounds(0, 10, 50, 50);
+            halfHeartSlot.setOpaque(false);
+            halfHeartSlot.setVisible(false);
+            backgroundPanel.add(halfHeartSlot);
+            backgroundPanel.setComponentZOrder(halfHeartSlot, 0);
+        }
 
+        int fullCount = (int) currentHealth;
+        for (int i = 0; i < heartSlots.size(); i++) {
+            JLabel slot = heartSlots.get(i);
+            if (i >= max) {
+                slot.setVisible(false);
+                continue;
+            }
+            slot.setVisible(true);
+            slot.setIcon(i < fullCount ? fullHeartIcon : emptyHeartIcon);
+        }
 
+        boolean hasHalf = (currentHealth % 1.0) != 0;
+        if (hasHalf) {
+            halfHeartSlot.setLocation((int) (-20 + (60 * currentHealth)), 10);
+            halfHeartSlot.setVisible(true);
+        } else {
+            halfHeartSlot.setVisible(false);
+        }
     }
 
     //method for the mobs to attack the player
@@ -2907,6 +3112,13 @@ public class frame extends JFrame implements KeyListener {
                         stoneSword.setVisible(true);
                         playerDamage = 4;
                         chestLooted[1] = true;
+
+                        // The quest's meetRequirements() returns its collectedStoneSword flag.
+                        // Without flipping it here, completeActiveQuest() silently does nothing.
+                        if(questSystem.activeQuest != null && questSystem.activeQuest.equals(collectSwordQuest)) { // checks if the active quest is the collect stone sword quest
+                            collectSwordQuest.setCollectedStoneSword(true); // sets the collected stone sword flag to true
+                            questSystem.completeActiveQuest(); // completes the quest
+                        }
 
                         break;
                     }
@@ -3882,6 +4094,7 @@ public class frame extends JFrame implements KeyListener {
        data.openedChestsInteraction = this.pressChestOn;
        data.maximumHealth = this.maximumHealth;
        data.gameBeenSaved = this.gameBeenSaved;
+       data.completedQuests = questManagementSystem.completedQuests;
 
         try(FileWriter writer = new FileWriter("saveGameData.json")) {
             gson.toJson(data, writer);
@@ -3904,6 +4117,7 @@ public class frame extends JFrame implements KeyListener {
             this.pressChestOn = data.openedChestsInteraction;
             this.maximumHealth = data.maximumHealth;
             this.gameBeenSaved = data.gameBeenSaved;
+            questManagementSystem.completedQuests = data.completedQuests;
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

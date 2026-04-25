@@ -43,69 +43,62 @@ public class playerMovement {
     }
 
     public void playerPosition() {
+      //  System.out.println("step: " + step + " playerWorldPos: " + playerWorldPos);
         int newX = x, newY = y;
         int newWorldX = playerWorldPos.x;
         int newWorldY = playerWorldPos.y;
+        boolean moving = false;
 
 
         // if statements for each direction, every 45 degrees, and detects for if there is a collsion and sets the new X and NewY variables dependant on
         // which buttons you are pressing
 
-        if (upPressed && leftPressed && !isCollision(x - step, y - step)) {
-            newX -= step / Math.sqrt(2);
-            newY -= step / Math.sqrt(2);
-            playerWorldPos.x -= step / Math.sqrt(2);
-            playerWorldPos.y -= step / Math.sqrt(2);
-            direction = "up";
-        } else if (upPressed && rightPressed && !isCollision(x + step, y - step)) {
-            newX += step / Math.sqrt(2);
-            newY -= step / Math.sqrt(2);
-            playerWorldPos.x += step / Math.sqrt(2);
-            playerWorldPos.y -= step / Math.sqrt(2);
-            direction = "up";
-        } else if (downPressed && leftPressed && !isCollision(x - step, y + step)) {
-            newX -= step / Math.sqrt(2);
-            newY += step / Math.sqrt(2);
-            playerWorldPos.x -= step / Math.sqrt(2);
-            playerWorldPos.y += step / Math.sqrt(2);
-            direction = "down";
-        } else if (downPressed && rightPressed && !isCollision(x + step, y + step)) {
-            newX += step / Math.sqrt(2);
-            newY += step / Math.sqrt(2);
-            playerWorldPos.x += step / Math.sqrt(2);
-            playerWorldPos.y += step / Math.sqrt(2);
-            direction = "down";
-        } else if (upPressed && !isCollision(x, y - step)) {
-            newY -= step;
-            playerWorldPos.y -= step;
-            direction = "up";
-        } else if (downPressed && !isCollision(x, y + step)) {
-            newY += step;
-            playerWorldPos.y += step;
-            direction = "down";
-        } else if (leftPressed && !isCollision(x - step, y)) {
-            newX -= step;
-            playerWorldPos.x -= step;
-            direction = "left";
-        } else if (rightPressed && !isCollision(x + step, y)) {
-            newX += step;
-            playerWorldPos.x += step;
-            direction = "right";
-        }
+       if (upPressed && leftPressed && !isCollision(playerWorldPos.x - (int)(step / Math.sqrt(2)), playerWorldPos.y - (int)(step / Math.sqrt(2)))) { // checks for collision and moves the player
+        playerWorldPos.x -= (int)(step / Math.sqrt(2)); // moves the player in the x direction
+        playerWorldPos.y -= (int)(step / Math.sqrt(2)); // moves the player in the y direction
+        direction = "up"; // sets the direction of the player
+        moving = true; // sets the moving variable to true
+    } else if (upPressed && rightPressed && !isCollision(playerWorldPos.x + (int)(step / Math.sqrt(2)), playerWorldPos.y - (int)(step / Math.sqrt(2)))) { // checks for collision and moves the player
+        playerWorldPos.x += (int)(step / Math.sqrt(2)); // moves the player in the x direction
+        playerWorldPos.y -= (int)(step / Math.sqrt(2)); // moves the player in the y direction
+        direction = "up"; // sets the direction of the player
+        moving = true; // sets the moving variable to true
+    } else if (downPressed && leftPressed && !isCollision(playerWorldPos.x - (int)(step / Math.sqrt(2)), playerWorldPos.y + (int)(step / Math.sqrt(2)))) { // checks for collision and moves the player
+        playerWorldPos.x -= (int)(step / Math.sqrt(2)); // moves the player in the x direction
+        playerWorldPos.y += (int)(step / Math.sqrt(2)); // moves the player in the y direction
+        direction = "down"; // sets the direction of the player
+        moving = true; // sets the moving variable to true
+    } else if (downPressed && rightPressed && !isCollision(playerWorldPos.x + (int)(step / Math.sqrt(2)), playerWorldPos.y + (int)(step / Math.sqrt(2)))) { // checks for collision and moves the player
+        playerWorldPos.x += (int)(step / Math.sqrt(2)); // moves the player in the x direction
+        playerWorldPos.y += (int)(step / Math.sqrt(2)); // moves the player in the y direction
+        direction = "down"; // sets the direction of the player
+        moving = true; // sets the moving variable to true
+    // cardinals
+    } else if (upPressed && !isCollision(playerWorldPos.x, playerWorldPos.y - step)) { // checks for collision and moves the player
+        playerWorldPos.y -= step; // moves the player in the y direction
+        direction = "up"; // sets the direction of the player
+        moving = true; // sets the moving variable to true
+    } else if (downPressed && !isCollision(playerWorldPos.x, playerWorldPos.y + step)) { // checks for collision and moves the player
+        playerWorldPos.y += step; // moves the player in the y direction
+        direction = "down"; // sets the direction of the player
+        moving = true; // sets the moving variable to true
+    } else if (leftPressed && !isCollision(playerWorldPos.x - step, playerWorldPos.y)) { // checks for collision and moves the player
+        playerWorldPos.x -= step; // moves the player in the x direction
+        direction = "left"; // sets the direction of the player
+        moving = true; // sets the moving variable to true
+    } else if (rightPressed && !isCollision(playerWorldPos.x + step, playerWorldPos.y)) { // checks for collision and moves the player
+        playerWorldPos.x += step; // moves the player in the x direction
+        direction = "right"; // sets the direction of the player
+        moving = true; // sets the moving variable to true
+    }
+
 
 
 
         // if there isnt a collision
 
-        if (!isCollision(newX, newY)) {
-
-
-            //sets the player world positon to playerWorldPos.x, playerWorldPos.y
-
+        /* if (!isCollision(newX, newY)) {
             playerWorldPos.setLocation(playerWorldPos.x, playerWorldPos.y);
-
-            //moves dependant on where the player is facing
-
         } else {
             if (upPressed) {
                 playerWorldPos.y += step;
@@ -117,7 +110,7 @@ public class playerMovement {
             } else if (rightPressed) {
                 playerWorldPos.x -= step;
             }
-        }
+        } */
 // Changes which player image is displayed, depending on which “frame” the character is in. Works in all directions as it gets the current direction, and then adds the specific frame.
         String imageName;
         if (moveDir == 1) {
@@ -150,14 +143,26 @@ public class playerMovement {
     }
 
     //checks if the player will overlap with one of the Jlabels that within the array for the obstacle and iterates through to check
-
-    private boolean isCollision(int x, int y) {
-        Rectangle playerBounds = new Rectangle(x, y, player.getWidth(), player.getHeight());
+    private boolean isCollision(int newWorldX, int newWorldY) {
+        Rectangle playerBounds = new Rectangle(newWorldX, newWorldY, player.getWidth(), player.getHeight());
 
         for (JLabel obstacle : obstacles) {
-            if (obstacle.getBounds().intersects(playerBounds)) {
-                return true;
-            }
+            if (obstacle == null) continue;
+        
+            // get the obstacle's world position from AssetPoint instead of its screen position
+            Point obstacleWorldPos = frame.AssetPoint.get(obstacle);
+         if (obstacleWorldPos == null) continue;
+        
+            Rectangle obstacleBounds = new Rectangle(
+            obstacleWorldPos.x, 
+            obstacleWorldPos.y, 
+            obstacle.getWidth(), 
+            obstacle.getHeight()
+        );
+        
+        if (playerBounds.intersects(obstacleBounds)) {
+            return true;
+        }
         }
         return false;
     }

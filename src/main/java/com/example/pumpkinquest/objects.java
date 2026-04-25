@@ -2,7 +2,7 @@ package com.example.pumpkinquest;
 
 import javax.swing.JLabel;
 
-public class objects {
+public class objects { // THIS CLASS IS NOT BEING USED, IT WAS A TEST/ITERATION ON HOW TO BETTER HANDLE ALL OF THE ASSETS
 
     private static frame mainFrame;
     static boolean debugMode;

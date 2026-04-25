@@ -20,14 +20,16 @@ public class Camera {
         this.playerHeight = height;
     }
 
-    public Point worldToScreen(Point worldPos) {
-
-        // Convert world coordinates to screen coordinates, with the camera position as the origin which is the center of the screen
-        // Gets the difference between the world position and the camera position, then adds half the screen width and height to center the camera
-        // And returns the screen coordinates as a Point object
+    public Point worldToScreen(Point worldPos) { // Converts world coordinates to screen coordinates, with the camera position as the origin which is the center of the screen
         int screenX = (screenWidth / 2) + (worldPos.x - position.x);
         int screenY = (screenHeight / 2) + (worldPos.y - position.y);
         return new Point(screenX, screenY);
+    }
+
+    public Point screenToWorld(Point screenPos) { // Converts screen coordinates to world coordinates, with the camera position as the origin which is the center of the screen
+        int worldX = screenPos.x - (screenWidth / 2) + position.x;
+        int worldY = screenPos.y - (screenHeight / 2) + position.y;
+        return new Point(worldX, worldY);
     }
 
     
